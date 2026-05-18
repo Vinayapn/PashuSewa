@@ -13,7 +13,7 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (!token) return;
-    socketRef.current = io('http://localhost:5000', {
+    socketRef.current = io('https://pashusewa-2.onrender.com', {
       auth: { token },
       transports: ['websocket'],
     });
