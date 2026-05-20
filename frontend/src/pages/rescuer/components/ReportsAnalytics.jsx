@@ -1,33 +1,6 @@
 import React from 'react';
 import { TrendingUp, Users, Heart, Award, ArrowUpRight, Clock, CheckCircle, AlertCircle, Calendar } from 'lucide-react';
-
-const stats = [
-  { label: 'Rescue Cases', value: '135', sub: '+12% from last month', icon: <TrendingUp size={20} />, color: 'bg-red-50 text-red-600' },
-  { label: 'Animals Helped', value: '98', sub: '+5 since yesterday', icon: <Heart size={20} />, color: 'bg-blue-50 text-blue-600' },
-  { label: 'Donations', value: 'Rs 423K', sub: '+Rs 45K from last period', icon: <Award size={20} />, color: 'bg-emerald-50 text-emerald-600' },
-  { label: 'New Volunteers', value: '17', sub: '+2 this week', icon: <Users size={20} />, color: 'bg-orange-50 text-orange-600' },
-];
-
-const animalTypes = [
-  { type: 'Dog', count: 48, color: 'bg-red-400' },
-  { type: 'Cat', count: 28, color: 'bg-orange-400' },
-  { type: 'Cow', count: 18, color: 'bg-amber-400' },
-  { type: 'Bird', count: 12, color: 'bg-emerald-400' },
-  { type: 'Other', count: 8, color: 'bg-blue-400' },
-];
-
-const urgencies = [
-  { level: 'Critical', count: 12, color: 'bg-red-600' },
-  { level: 'High', count: 32, color: 'bg-orange-500' },
-  { level: 'Medium', count: 44, color: 'bg-amber-400' },
-  { level: 'Low', count: 18, color: 'bg-emerald-400' },
-];
-
-const statuses = [
-  { status: 'Pending', count: 22, color: 'bg-amber-400' },
-  { status: 'In Progress', count: 35, color: 'bg-blue-400' },
-  { status: 'Resolved', count: 54, color: 'bg-emerald-400' },
-];
+import { useAuth } from '../../../context/AuthContext';
 
 const topDonors = [
   { name: 'Amit Kumar', amount: 'Rs 22,000', label: '8 campaigns' },
@@ -37,15 +10,91 @@ const topDonors = [
   { name: 'Vikram Singh', amount: 'Rs 10,000', label: '7 campaigns' },
 ];
 
-const recentActivity = [
-  { type: 'Rescue case resolved', desc: 'Injured Dog on Highway', time: '10 min ago', icon: <CheckCircle size={16} />, color: 'bg-emerald-50 text-emerald-500' },
-  { type: 'New donation received', desc: 'Anjali donated Rs 2,500', time: '25 min ago', icon: <Heart size={16} />, color: 'bg-emerald-50 text-emerald-500' },
-  { type: 'Volunteer joined', desc: 'Raman Gupta joined the squad', time: '1 hr ago', icon: <Users size={16} />, color: 'bg-blue-50 text-blue-500' },
-  { type: 'Health case created', desc: 'Cat Fever - Saket, Delhi', time: '2 hrs ago', icon: <AlertCircle size={16} />, color: 'bg-red-50 text-red-500' },
-  { type: 'Campaign target reached', desc: 'Vaccination Drive - Rs 25,000', time: '3 hrs ago', icon: <TrendingUp size={16} />, color: 'bg-amber-50 text-amber-500' },
-];
+export default function ReportsAnalytics({ stats: globalStats, alerts = [] }) {
+  const { user } = useAuth();
+  const userId = user?._id || user?.id;
 
-export default function ReportsAnalytics() {
+  const userAlerts = alerts.filter(c => {
+    const creatorId = c.createdBy?._id || c.createdBy;
+    const isCreator = creatorId === userId;
+    const isAssigned = c.assignedTo && Array.isArray(c.assignedTo) && c.assignedTo.some(id => 
+      id.toString() === userId?.toString() || id._id?.toString() === userId?.toString()
+    );
+    return isCreator || isAssigned;
+  });
+
+  const totalCases = userAlerts.length;
+  const resolvedCases = userAlerts.filter(a => a.status === 'Resolved').length;
+  const activeCases = userAlerts.filter(a => a.status !== 'Resolved' && a.status !== 'Cancelled').length;
+
+  const stats = [
+    { label: 'My Rescue Cases', value: totalCases.toString(), sub: 'Total assigned/created', icon: <TrendingUp size={20} />, color: 'bg-red-50 text-red-600' },
+    { label: 'Animals Helped', value: resolvedCases.toString(), sub: 'Successfully resolved', icon: <Heart size={20} />, color: 'bg-blue-50 text-blue-600' },
+    { label: 'Active Cases', value: activeCases.toString(), sub: 'Currently pending/progress', icon: <AlertCircle size={20} />, color: 'bg-amber-50 text-amber-600' },
+    { label: 'Global Team', value: (globalStats?.teamMembers || 0).toString(), sub: 'Total active rescuers', icon: <Users size={20} />, color: 'bg-emerald-50 text-emerald-600' },
+  ];
+
+  const animalCounts = { Dog: 0, Cat: 0, Cow: 0, Bird: 0, Other: 0 };
+  userAlerts.forEach(a => {
+    let type = 'Other';
+    if (a.description?.includes('[Animal: Dog]')) type = 'Dog';
+    else if (a.description?.includes('[Animal: Cat]')) type = 'Cat';
+    else if (a.description?.includes('[Animal: Cow]')) type = 'Cow';
+    else if (a.description?.includes('[Animal: Bird]')) type = 'Bird';
+    animalCounts[type]++;
+  });
+
+  const animalTypes = [
+    { type: 'Dog', count: animalCounts.Dog, color: 'bg-red-400' },
+    { type: 'Cat', count: animalCounts.Cat, color: 'bg-orange-400' },
+    { type: 'Cow', count: animalCounts.Cow, color: 'bg-amber-400' },
+    { type: 'Bird', count: animalCounts.Bird, color: 'bg-emerald-400' },
+    { type: 'Other', count: animalCounts.Other, color: 'bg-blue-400' },
+  ];
+
+  const urgencyCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
+  userAlerts.forEach(a => {
+    if (urgencyCounts[a.severity] !== undefined) urgencyCounts[a.severity]++;
+  });
+
+  const urgencies = [
+    { level: 'Critical', count: urgencyCounts.Critical, color: 'bg-red-600' },
+    { level: 'High', count: urgencyCounts.High, color: 'bg-orange-500' },
+    { level: 'Medium', count: urgencyCounts.Medium, color: 'bg-amber-400' },
+    { level: 'Low', count: urgencyCounts.Low, color: 'bg-emerald-400' },
+  ];
+
+  const statusCounts = { Pending: 0, InProgress: 0, Resolved: 0 };
+  userAlerts.forEach(a => {
+    let s = a.status === 'In Progress' ? 'InProgress' : a.status;
+    if (statusCounts[s] !== undefined) statusCounts[s]++;
+  });
+
+  const statuses = [
+    { status: 'Pending', count: statusCounts.Pending, color: 'bg-amber-400' },
+    { status: 'In Progress', count: statusCounts.InProgress, color: 'bg-blue-400' },
+    { status: 'Resolved', count: statusCounts.Resolved, color: 'bg-emerald-400' },
+  ];
+
+  let recentActivity = userAlerts.slice(0, 5).map(a => ({
+    type: `Case: ${a.type || 'Alert'}`,
+    desc: a.title,
+    time: new Date(a.createdAt).toLocaleDateString(),
+    icon: <AlertCircle size={16} />,
+    color: 'bg-red-50 text-red-500'
+  }));
+
+  if (recentActivity.length === 0) {
+    recentActivity = [
+      { type: 'No activity yet', desc: 'You have not created or been assigned cases.', time: '', icon: <Clock size={16} />, color: 'bg-gray-50 text-gray-400' }
+    ];
+  }
+
+  // Calculating total cases to prevent division by zero in charts
+  const totalAnimals = Object.values(animalCounts).reduce((a,b)=>a+b,0) || 1;
+  const totalUrgencies = Object.values(urgencyCounts).reduce((a,b)=>a+b,0) || 1;
+  const totalStatuses = Object.values(statusCounts).reduce((a,b)=>a+b,0) || 1;
+
   return (
     <div className="p-8 bg-[#F8F9FA] min-h-full">
       <div className="flex justify-between items-center mb-8">
@@ -103,23 +152,6 @@ export default function ReportsAnalytics() {
             </div>
           </div>
 
-          {/* Donations Trend */}
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800 mb-8">Donations Trend</h2>
-            <div className="h-[200px] flex items-end gap-3 px-4">
-              {[40, 65, 80, 55, 90, 75].map((h, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-3">
-                  <div className="w-full bg-emerald-400 rounded-t-md transition-all hover:bg-emerald-500 relative group" style={{ height: `${h}%` }}>
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">Rs {h}k</div>
-                  </div>
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-tighter">
-                    {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'][i]}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Breakdown Grids */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
              {/* Animal Types */}
@@ -133,7 +165,7 @@ export default function ReportsAnalytics() {
                       <span className="text-gray-900">{item.count}</span>
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div className={`h-full ${item.color}`} style={{ width: `${(item.count/50)*100}%` }}></div>
+                      <div className={`h-full ${item.color}`} style={{ width: `${(item.count/totalAnimals)*100}%` }}></div>
                     </div>
                   </div>
                 ))}
@@ -151,7 +183,7 @@ export default function ReportsAnalytics() {
                       <span className="text-gray-900">{item.count}</span>
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div className={`h-full ${item.color}`} style={{ width: `${(item.count/50)*100}%` }}></div>
+                      <div className={`h-full ${item.color}`} style={{ width: `${(item.count/totalUrgencies)*100}%` }}></div>
                     </div>
                   </div>
                 ))}
@@ -170,7 +202,7 @@ export default function ReportsAnalytics() {
                     <span className="text-gray-900">{item.count}</span>
                   </div>
                   <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                    <div className={`h-full ${item.color}`} style={{ width: `${(item.count/60)*100}%` }}></div>
+                    <div className={`h-full ${item.color}`} style={{ width: `${(item.count/totalStatuses)*100}%` }}></div>
                   </div>
                 </div>
               ))}

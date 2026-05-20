@@ -4,15 +4,15 @@ import { useAuth } from '../../../context/AuthContext';
 import toast from 'react-hot-toast';
 
 export default function ProfileView() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || 'Ravi Kumar',
     email: user?.email || 'ravi.rescuer@gmail.com',
-    phone: '+91 98765 43210',
-    location: 'New Delhi, India',
-    specialization: 'Canine Rescue, Large Animal Emergency',
-    certifications: 'Welfare Certified Rescuer (Level 3)',
+    phone: user?.phone || '+91 98765 43210',
+    location: (typeof user?.location === 'string' ? user.location : user?.address) || 'New Delhi, India',
+    specialization: user?.specialization || 'Canine Rescue, Large Animal Emergency',
+    certifications: user?.certifications || 'Welfare Certified Rescuer (Level 3)',
   });
 
   useEffect(() => {
@@ -21,11 +21,18 @@ export default function ProfileView() {
         ...prev,
         name: user.name || prev.name,
         email: user.email || prev.email,
+        phone: user.phone || prev.phone,
+        location: typeof user.location === 'string' ? user.location : (user.address || prev.location),
+        specialization: user.specialization || prev.specialization,
+        certifications: user.certifications || prev.certifications,
       }));
     }
   }, [user]);
 
   const handleSave = () => {
+    if (updateUser) {
+      updateUser(formData);
+    }
     // In a real app, this would call an API to update the user profile
     toast.success('Profile updated successfully!');
     setIsEditing(false);
@@ -136,15 +143,15 @@ export default function ProfileView() {
           {/* Impact Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center">
-              <div className="text-3xl font-bold text-gray-900 mb-1">124</div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{user?.rescuesCompleted || 0}</div>
               <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">Rescues Completed</div>
             </div>
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center">
-              <div className="text-3xl font-bold text-gray-900 mb-1">4.9</div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{user?.avgRating || "0.0"}</div>
               <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">Avg Rating</div>
             </div>
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center">
-              <div className="text-3xl font-bold text-gray-900 mb-1">2.4y</div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{user?.experience || "0y"}</div>
               <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">Experience</div>
             </div>
           </div>

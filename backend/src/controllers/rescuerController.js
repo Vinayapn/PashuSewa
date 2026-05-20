@@ -88,4 +88,32 @@ const getMapAlerts = async (req, res) => {
   }
 };
 
-module.exports = { getDashboard, createAlert, updateAlertStatus, getMapAlerts };
+// Update alert details
+const updateAlert = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, type, severity, address, description } = req.body;
+
+    const alert = await Alert.findById(id);
+    if (!alert) return res.status(404).json({ success: false, message: 'Alert not found.' });
+
+    // Check if user is the creator (optional but good practice)
+    if (alert.createdBy.toString() !== req.user._id.toString() && !alert.assignedTo.includes(req.user._id)) {
+      return res.status(403).json({ success: false, message: 'Not authorized to edit this alert.' });
+    }
+
+    const updatedAlert = await Alert.findByIdAndUpdate(
+      id,
+      { title, type, severity, address, description },
+      { new: true }
+    ).populate('createdBy', 'name role');
+
+    req.app.get('io')?.emit('alert_updated', { alert: updatedAlert });
+
+    res.json({ success: true, message: 'Alert updated successfully.', alert: updatedAlert });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { getDashboard, createAlert, updateAlertStatus, getMapAlerts, updateAlert };

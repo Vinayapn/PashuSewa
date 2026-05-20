@@ -82,7 +82,7 @@ export default function RescuerDashboard() {
       case 'profile':
         return <ProfileView user={user} />;
       case 'reports':
-        return <ReportsAnalytics stats={data.stats} />;
+        return <ReportsAnalytics stats={data.stats} alerts={data.alerts} />;
       default:
         return <DashboardOverview setTab={setTab} stats={data.stats} alerts={data.alerts} />;
     }

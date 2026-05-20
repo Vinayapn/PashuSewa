@@ -35,6 +35,7 @@ export const rescuerAPI = {
   getDashboard: () => API.get('/rescuer/dashboard'),
   createAlert: (data) => API.post('/rescuer/alerts', data),
   updateAlertStatus: (id, status) => API.patch(`/rescuer/alerts/${id}/status`, { status }),
+  updateAlert: (id, data) => API.put(`/rescuer/alerts/${id}`, data),
   getMapAlerts: () => API.get('/rescuer/map/alerts'),
 };
 

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, ExternalLink, RefreshCw } from 'lucide-react';
+import { Search, Filter, MoreVertical, ExternalLink, RefreshCw, Edit2, X, Save } from 'lucide-react';
 import { rescuerAPI } from '../../../services/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../../context/AuthContext';
 
 const getUrgencyColor = (urgency) => {
   switch (urgency) {
@@ -22,8 +23,12 @@ const getStatusStyles = (status) => {
 };
 
 export default function MyCases({ alerts, refresh }) {
+  const { user } = useAuth();
+  const userId = user?._id || user?.id;
+
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [editingAlert, setEditingAlert] = useState(null);
   const itemsPerPage = 10;
 
   const updateStatus = async (id, status) => {
@@ -36,9 +41,29 @@ export default function MyCases({ alerts, refresh }) {
     }
   };
 
+  const handleSaveEdit = async () => {
+    try {
+      await rescuerAPI.updateAlert(editingAlert._id, editingAlert);
+      toast.success('Alert updated successfully');
+      setEditingAlert(null);
+      refresh();
+    } catch (err) {
+      toast.error('Failed to update alert details');
+    }
+  };
+
   const safeAlerts = alerts || [];
   
-  const filteredAlerts = safeAlerts.filter(c => 
+  const userAlerts = safeAlerts.filter(c => {
+    const creatorId = c.createdBy?._id || c.createdBy;
+    const isCreator = creatorId === userId;
+    const isAssigned = c.assignedTo && Array.isArray(c.assignedTo) && c.assignedTo.some(id => 
+      id.toString() === userId?.toString() || id._id?.toString() === userId?.toString()
+    );
+    return isCreator || isAssigned;
+  });
+  
+  const filteredAlerts = userAlerts.filter(c => 
     c.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
     c.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.type?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -57,7 +82,7 @@ export default function MyCases({ alerts, refresh }) {
   };
 
   return (
-    <div className="p-8 bg-[#F8F9FA] min-h-full">
+    <div className="p-8 bg-[#F8F9FA] min-h-full relative">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Rescue Alerts</h1>
@@ -93,7 +118,7 @@ export default function MyCases({ alerts, refresh }) {
                 <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Location</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Urgency</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Update Status</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -125,7 +150,7 @@ export default function MyCases({ alerts, refresh }) {
                       {c.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
                     <select 
                       className="text-xs font-bold bg-gray-50 border border-gray-100 rounded-lg p-2 outline-none focus:ring-2 focus:ring-red-500 cursor-pointer"
                       value={c.status}
@@ -136,6 +161,13 @@ export default function MyCases({ alerts, refresh }) {
                       <option value="Resolved">Resolved</option>
                       <option value="Cancelled">Cancelled</option>
                     </select>
+                    <button 
+                      onClick={() => setEditingAlert(c)}
+                      className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Edit Case"
+                    >
+                      <Edit2 size={16} />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -164,6 +196,86 @@ export default function MyCases({ alerts, refresh }) {
           </div>
         </div>
       </div>
+
+      {/* Edit Modal Overlay */}
+      {editingAlert && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h2 className="text-lg font-bold text-gray-800">Edit Alert Details</h2>
+              <button onClick={() => setEditingAlert(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
+                <input 
+                  type="text" 
+                  value={editingAlert.title || ''}
+                  onChange={(e) => setEditingAlert({...editingAlert, title: e.target.value})}
+                  className="w-full px-4 py-2 mb-3 text-gray-500 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none font-medium"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Type</label>
+                  <select 
+                    value={editingAlert.type || 'SOS'}
+                    onChange={(e) => setEditingAlert({...editingAlert, type: e.target.value})}
+                    className="w-full px-4 py-2 text-gray-500 mb-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none font-medium bg-white"
+                  >
+                    <option value="SOS">SOS (Emergency)</option>
+                    <option value="Medical">Medical Need</option>
+                    <option value="Rescue">General Rescue</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Severity</label>
+                  <select 
+                    value={editingAlert.severity || 'High'}
+                    onChange={(e) => setEditingAlert({...editingAlert, severity: e.target.value})}
+                    className="w-full px-4 py-2 text-gray-500 mb-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none font-medium bg-white"
+                  >
+                    <option value="Critical">Critical</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Location / Address</label>
+                <input 
+                  type="text" 
+                  value={editingAlert.address || ''}
+                  onChange={(e) => setEditingAlert({...editingAlert, address: e.target.value})}
+                  className="w-full px-4 py-2 text-gray-500  border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none font-medium"
+                />
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
+              <button 
+                onClick={() => setEditingAlert(null)}
+                className="px-4 py-2 font-bold text-gray-600 hover:bg-gray-200 bg-gray-100 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveEdit}
+                className="flex items-center gap-2 px-6 py-2 font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-lg shadow-red-100 transition-colors"
+              >
+                <Save size={16} />
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

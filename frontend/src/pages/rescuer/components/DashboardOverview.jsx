@@ -1,5 +1,6 @@
 import React from 'react';
 import { FileText, Clock, CheckCircle, Calendar, Plus, MapPin } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
 
 const getUrgencyColor = (urgency) => {
   switch (urgency) {
@@ -20,6 +21,21 @@ const getStatusStyles = (status) => {
 };
 
 export default function DashboardOverview({ setTab, stats, alerts }) {
+  const { user } = useAuth();
+  
+  // Get the correct user ID depending on whether it came from /me (req.user._id) or login (user.id)
+  const userId = user?._id || user?.id;
+
+  // Filter alerts for the logged-in user
+  const userAlerts = alerts?.filter(c => {
+    const creatorId = c.createdBy?._id || c.createdBy;
+    const isCreator = creatorId === userId;
+    const isAssigned = c.assignedTo && Array.isArray(c.assignedTo) && c.assignedTo.some(id => 
+      id.toString() === userId?.toString() || id._id?.toString() === userId?.toString()
+    );
+    return isCreator || isAssigned;
+  }) || [];
+
   const displayStats = [
     { label: 'Active Rescues', value: stats?.totalActive || 0, icon: <FileText className="text-blue-500" />, bgColor: 'bg-blue-50' },
     { label: 'SOS Alerts', value: stats?.totalSOS || 0, icon: <Clock className="text-amber-500" />, bgColor: 'bg-amber-50' },
@@ -30,7 +46,7 @@ export default function DashboardOverview({ setTab, stats, alerts }) {
   return (
     <div className="p-8 bg-[#F8F9FA] min-h-full">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Hello, Rescuer!</h1>
+        <h1 className="text-3xl font-bold text-gray-800">Hello, {user?.name || 'Rescuer'}!</h1>
         <p className="text-gray-500">Which animals will you help today?</p>
       </div>
 
@@ -93,12 +109,12 @@ export default function DashboardOverview({ setTab, stats, alerts }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {(!alerts || alerts.length === 0) && (
+              {(!userAlerts || userAlerts.length === 0) && (
                 <tr>
                   <td colSpan={4} className="px-6 py-12 text-center text-gray-400 font-medium italic">No recent alerts found</td>
                 </tr>
               )}
-              {alerts?.slice(0, 5).map((c) => (
+              {userAlerts.slice(0, 5).map((c) => (
                 <tr key={c._id} className="hover:bg-gray-50 transition-colors cursor-pointer group">
                   <td className="px-6 py-4">
                     <div className="font-bold text-gray-900 group-hover:text-red-600 transition-colors">{c.title}</div>

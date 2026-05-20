@@ -18,17 +18,19 @@ const httpServer = http.createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    methods: ['GET', 'POST'],
+    origin: process.env.CLIENT_URL || 'https://pashu-sewa-lime.vercel.app',
+    methods: ["GET","POST", "PUT", "DELETE"],
     credentials: true,
   },
 });
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: process.env.CLIENT_URL || 'https://pashu-sewa-lime.vercel.app',
   credentials: true,
 }));
+
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

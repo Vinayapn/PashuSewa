@@ -1,10 +1,12 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { ArrowLeft, MapPin, Phone, User, Info, Map as MapIcon, Crosshair, X } from 'lucide-react';
 import { rescuerAPI } from '../../../services/api';
 import MapView from '../../../components/MapView';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../../context/AuthContext';
 
 export default function NewCaseForm({ setTab }) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [locatingMe, setLocatingMe] = useState(false);
@@ -17,9 +19,19 @@ export default function NewCaseForm({ setTab }) {
     description: '',
     address: '',
     landmark: '',
-    reporterName: 'Ravi',
-    reporterPhone: '+91 98765 43210'
+    reporterName: user?.name || '',
+    reporterPhone: user?.phone || ''
   });
+
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        reporterName: user.name || prev.reporterName,
+        reporterPhone: user.phone || prev.reporterPhone
+      }));
+    }
+  }, [user]);
 
   const animalTypes = ['Dog', 'Cat', 'Cow', 'Bird', 'Horse', 'Monkey', 'Other'];
   const urgencies = [
