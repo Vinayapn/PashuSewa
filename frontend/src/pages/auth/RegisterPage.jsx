@@ -6,6 +6,7 @@ import { authAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 const ROLES = [
+  { id: 'user', emoji: '👤', name: 'User', desc: 'General public & supporter', activeClass: 'active-user' },
   { id: 'rescuer', emoji: '🦺', name: 'Rescuer', desc: 'Field operations & SOS', activeClass: 'active-rescuer' },
   { id: 'ngo', emoji: '🏥', name: 'NGO', desc: 'Resources & shelters', activeClass: 'active-ngo' },
   { id: 'doctor', emoji: '👨‍⚕️', name: 'Doctor', desc: 'Medical & triage', activeClass: 'active-doctor' },

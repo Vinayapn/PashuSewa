@@ -25,7 +25,8 @@ const ProtectedRoute = ({ children, allowedRole }) => {
     </div>
   );
   if (!user) return <Navigate to="/login" replace />;
-  if (allowedRole && user.role !== allowedRole) return <Navigate to={`/${user.role}`} replace />;
+  const userRole = (user.role || 'user').trim().toLowerCase();
+  if (allowedRole && userRole !== allowedRole.toLowerCase()) return <Navigate to={`/${userRole}`} replace />;
   return children;
 };
 
@@ -40,14 +41,39 @@ const RoleRedirect = () => {
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (user) return <Navigate to={`/${user.role}`} replace />;
+  if (user) {
+    const role = (user.role || 'user').trim().toLowerCase();
+    if (role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+    if (role === 'user') return <Navigate to="/" replace />;
+    return <Navigate to={`/${role}`} replace />;
+  }
   return children;
 };
+
+// ── Root Route (redirect admins) ──────────────────────────────────────────────
+const RootRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  const role = user ? (user.role || 'user').trim().toLowerCase() : null;
+  if (role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+  return children;
+};
+
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import UserManagement from './pages/admin/UserManagement';
+import ReportManagement from './pages/admin/ReportManagement';
+import NGOManagement from './pages/admin/NGOManagement';
+import DoctorManagement from './pages/admin/DoctorManagement';
+import RescuerManagement from './pages/admin/RescuerManagement';
+import CampaignManagement from './pages/admin/CampaignManagement';
+import DonationManagement from './pages/admin/DonationManagement';
+import AdminSettings from './pages/admin/AdminSettings';
 
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
+      <Route path="/" element={<RootRoute><HomePage /></RootRoute>} />
       <Route path="/services" element={<ServicesPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/contact" element={<ContactPage />} />
@@ -58,6 +84,22 @@ function AppRoutes() {
       <Route path="/rescuer" element={<ProtectedRoute allowedRole="rescuer"><RescuerDashboard /></ProtectedRoute>} />
       <Route path="/ngo" element={<ProtectedRoute allowedRole="ngo"><NGODashboard /></ProtectedRoute>} />
       <Route path="/doctor" element={<ProtectedRoute allowedRole="doctor"><DoctorDashboard /></ProtectedRoute>} />
+      
+      {/* Admin Routes */}
+      <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminLayout /></ProtectedRoute>}>
+        <Route index element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="users" element={<UserManagement />} />
+        {/* Placeholder routes for other admin sections */}
+        <Route path="ngos" element={<NGOManagement />} />
+        <Route path="doctors" element={<DoctorManagement />} />
+        <Route path="rescuers" element={<RescuerManagement />} />
+        <Route path="campaigns" element={<CampaignManagement />} />
+        <Route path="donations" element={<DonationManagement />} />
+        <Route path="reports" element={<ReportManagement />} />
+        <Route path="settings" element={<AdminSettings />} />
+      </Route>
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

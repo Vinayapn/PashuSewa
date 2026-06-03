@@ -18,7 +18,7 @@ export default function ForgotPasswordPage() {
 
   // ── Step 1: Send OTP ─────────────────────────────────────────────────────
   const sendOTP = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     setError('');
     if (!email) { setError('Email is required.'); return; }
     setLoading(true);
@@ -28,6 +28,19 @@ export default function ForgotPasswordPage() {
       setStep(STEPS.OTP);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to send OTP.');
+    } finally { setLoading(false); }
+  };
+
+  // ── Resend OTP (clears state first) ───────────────────────────────────────
+  const resendOTP = async () => {
+    setOtp(['', '', '', '', '', '']);
+    setError('');
+    setLoading(true);
+    try {
+      await authAPI.forgotPassword(email);
+      toast.success('OTP resent! Check your email.');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to resend OTP.');
     } finally { setLoading(false); }
   };
 
@@ -143,7 +156,7 @@ export default function ForgotPasswordPage() {
               {loading ? <><div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />Verifying...</> : 'Verify OTP'}
             </button>
             <p className="auth-link" style={{ marginTop: 12 }}>
-              Didn't receive it? <button type="button" className="link-btn" onClick={() => { setOtp(['','','','','','']); sendOTP({ preventDefault: ()=>{} }); }}>Resend OTP</button>
+              Didn't receive it? <button type="button" className="link-btn" disabled={loading} onClick={resendOTP}>Resend OTP</button>
             </p>
           </form>
         )}

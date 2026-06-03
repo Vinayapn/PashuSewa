@@ -11,8 +11,12 @@ const register = async (req, res) => {
     if (!name || !email || !password || !role) {
       return res.status(400).json({ success: false, message: 'Name, email, password, and role are required.' });
     }
-    if (!['rescuer', 'ngo', 'doctor'].includes(role)) {
-      return res.status(400).json({ success: false, message: 'Invalid role. Must be rescuer, ngo, or doctor.' });
+    const allowedRoles = ['user', 'rescuer', 'ngo', 'doctor'];
+    if (role === 'admin') {
+      return res.status(403).json({ success: false, message: 'Invalid role' });
+    }
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({ success: false, message: 'Invalid role. Must be user, rescuer, ngo, or doctor.' });
     }
     if (password.length < 6) {
       return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });

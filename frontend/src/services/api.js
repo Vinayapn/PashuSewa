@@ -59,6 +59,22 @@ export const doctorAPI = {
   getPatients: () => API.get('/doctor/patients'),
   addPatient: (data) => API.post('/doctor/patients', data),
   updatePatient: (id, data) => API.patch(`/doctor/patients/${id}`, data),
+  getAppointments: () => API.get('/doctor/appointments'),
+  addAppointment: (data) => API.post('/doctor/appointments', data),
+  updateAppointment: (id, data) => API.patch(`/doctor/appointments/${id}`, data),
+  addResource: (data) => API.post('/doctor/resources', data),
+  updateResource: (id, data) => API.patch(`/doctor/resources/${id}`, data),
+};
+
+// Admin
+export const adminAPI = {
+  getDashboardStats: () => API.get('/admin/dashboard-stats'),
+  getUsers: (role, search) => API.get(`/admin/users`, { params: { role, search } }),
+  updateUserStatus: (id, isActive) => API.put(`/admin/users/${id}/status`, { isActive }),
+  deleteUser: (id) => API.delete(`/admin/users/${id}`),
+  getAlerts: () => API.get('/admin/alerts'),
+  getCampaigns: () => API.get('/admin/campaigns'),
+  getDonations: () => API.get('/admin/donations'),
 };
 
 export default API;

@@ -28,24 +28,12 @@ export default function DoctorDashboard() {
   const [editingCase, setEditingCase] = useState(null);
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [editingMedicine, setEditingMedicine] = useState(null);
-  const [healthCases, setHealthCases] = useState([
-    { id: 1, title: 'Dog Fracture', patient: 'Tommy', type: 'Dog', urgency: 'High', status: 'Treating', date: '2025-04-28' },
-    { id: 2, title: 'Cat Fever', patient: 'Luna', type: 'Cat', urgency: 'Medium', status: 'Recovered', date: '2025-04-27' },
-    { id: 3, title: 'Cow Infection', patient: 'Lakshmi', type: 'Cow', urgency: 'Critical', status: 'Treating', date: '2025-04-26' },
-    { id: 4, title: 'Pigeon Wing Injury', patient: 'Sky', type: 'Bird', urgency: 'Low', status: 'Pending', date: '2025-04-28' },
-  ]);
-  const [appointments, setAppointments] = useState([
-    { id: 1, patient: 'Tommy', type: 'Dog', owner: 'Rahul Sharma', phone: '+91 98765 43210', date: '2025-04-29', time: '10:00 AM', category: 'Checkup', status: 'scheduled' },
-    { id: 2, patient: 'Minky', type: 'Cat', owner: 'Seema Gupta', phone: '+91 98765 43211', date: '2025-04-29', time: '11:30 AM', category: 'Vaccination', status: 'scheduled' },
-    { id: 3, patient: 'Lakshmi', type: 'Cow', owner: 'Rajesh Patil', phone: '+91 98765 43212', date: '2025-04-29', time: '2:00 PM', category: 'Treatment', status: 'completed' },
-    { id: 4, patient: 'Bruno', type: 'Dog', owner: 'Amit Kumar', phone: '+91 98765 43213', date: '2025-04-30', time: '9:00 AM', category: 'Surgery', status: 'scheduled' },
-  ]);
-  const [inventory, setInventory] = useState([
-    { id: 1, name: 'Rabies Vaccine', type: 'Vaccine', quantity: 45, unit: 'vials', status: 'Available', expiry: '2025-12-20' },
-    { id: 2, name: 'Amoxicillin', type: 'Antibiotic', quantity: 12, unit: 'bottles', status: 'Low', expiry: '2025-08-15' },
-    { id: 3, name: 'Meloxicam', type: 'Painkiller', quantity: 8, unit: 'bottles', status: 'Critical', expiry: '2025-10-10' },
-    { id: 4, name: 'Surgical Gauze', type: 'Consumable', quantity: 150, unit: 'rolls', status: 'Available', expiry: '2026-05-01' },
-  ]);
+  const [healthCases, setHealthCases] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [inventory, setInventory] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [loadingData, setLoadingData] = useState(true);
 
   const navigate = useNavigate();
 
@@ -54,7 +42,28 @@ export default function DoctorDashboard() {
     if (userData) {
       setUser(prev => ({ ...prev, ...JSON.parse(userData) }));
     }
+    fetchDashboardData();
   }, []);
+
+  const fetchDashboardData = async () => {
+    setLoadingData(true);
+    try {
+      const { doctorAPI } = await import('../../services/api');
+      const { data } = await doctorAPI.getDashboard();
+      if (data.success) {
+        setHealthCases(data.patients || []);
+        setAppointments(data.appointments || []);
+        setInventory(data.inventory || []);
+        setAlerts(data.alerts || []);
+        setDashboardStats(data.stats || null);
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      toast.error('Failed to load dashboard data');
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('relieflink_token');
@@ -77,17 +86,21 @@ export default function DoctorDashboard() {
   };
 
   const renderContent = () => {
+    if (loadingData) {
+      return <div className="flex items-center justify-center h-full"><div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>;
+    }
+
     switch (tab) {
-      case 'dashboard': return <DoctorDashboardOverview setTab={handleTabChange} cases={healthCases} appointments={appointments} />;
-      case 'health-cases': return <DoctorHealthCases setTab={handleTabChange} cases={healthCases} setCases={setHealthCases} setEditingCase={setEditingCase} />;
-      case 'appointments': return <DoctorAppointments appointments={appointments} setAppointments={setAppointments} setTab={handleTabChange} setEditingAppointment={setEditingAppointment} />;
-      case 'new-case': return <DoctorNewCaseForm setTab={handleTabChange} cases={healthCases} setCases={setHealthCases} editingCase={editingCase} />;
-      case 'new-appointment': return <DoctorNewAppointmentForm setTab={handleTabChange} appointments={appointments} setAppointments={setAppointments} editingAppointment={editingAppointment} />;
-      case 'new-medicine': return <DoctorNewMedicineForm setTab={handleTabChange} inventory={inventory} setInventory={setInventory} editingMedicine={editingMedicine} />;
-      case 'medicine-stock': return <DoctorMedicineStock inventory={inventory} setInventory={setInventory} setTab={handleTabChange} setEditingMedicine={setEditingMedicine} />;
+      case 'dashboard': return <DoctorDashboardOverview setTab={handleTabChange} cases={healthCases} appointments={appointments} stats={dashboardStats} />;
+      case 'health-cases': return <DoctorHealthCases setTab={handleTabChange} cases={healthCases} setCases={setHealthCases} setEditingCase={setEditingCase} fetchDashboardData={fetchDashboardData} />;
+      case 'appointments': return <DoctorAppointments appointments={appointments} setAppointments={setAppointments} setTab={handleTabChange} setEditingAppointment={setEditingAppointment} fetchDashboardData={fetchDashboardData} />;
+      case 'new-case': return <DoctorNewCaseForm setTab={handleTabChange} cases={healthCases} setCases={setHealthCases} editingCase={editingCase} fetchDashboardData={fetchDashboardData} />;
+      case 'new-appointment': return <DoctorNewAppointmentForm setTab={handleTabChange} appointments={appointments} setAppointments={setAppointments} editingAppointment={editingAppointment} fetchDashboardData={fetchDashboardData} />;
+      case 'new-medicine': return <DoctorNewMedicineForm setTab={handleTabChange} inventory={inventory} setInventory={setInventory} editingMedicine={editingMedicine} fetchDashboardData={fetchDashboardData} />;
+      case 'medicine-stock': return <DoctorMedicineStock inventory={inventory} setInventory={setInventory} setTab={handleTabChange} setEditingMedicine={setEditingMedicine} fetchDashboardData={fetchDashboardData} />;
       case 'profile': return <DoctorProfile user={user} setUser={setUser} />;
-      case 'reports': return <DoctorReports />;
-      default: return <DoctorDashboardOverview setTab={handleTabChange} cases={healthCases} appointments={appointments} />;
+      case 'reports': return <DoctorReports alerts={alerts} />;
+      default: return <DoctorDashboardOverview setTab={handleTabChange} cases={healthCases} appointments={appointments} stats={dashboardStats} />;
     }
   };
 

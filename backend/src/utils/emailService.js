@@ -1,14 +1,37 @@
 const nodemailer = require('nodemailer');
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+// Create transporter lazily at call-time so it always picks up the real env vars
+const createTransporter = () => {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+};
 
 const sendOTPEmail = async (to, name, otp) => {
+  // ── Dev-mode fallback: if email not configured, just log the OTP ──
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
+  const isEmailConfigured =
+    emailUser &&
+    emailPass &&
+    emailUser !== 'your_email@gmail.com' &&
+    emailPass !== 'your_gmail_app_password';
+
+  if (!isEmailConfigured) {
+    console.log('\n============================================');
+    console.log('⚠️  EMAIL NOT CONFIGURED — DEV MODE OTP:');
+    console.log(`   To: ${to}`);
+    console.log(`   OTP: ${otp}`);
+    console.log('   (Set EMAIL_USER and EMAIL_PASS in .env to send real emails)');
+    console.log('============================================\n');
+    return; // Skip actual email sending in dev
+  }
+
+  const transporter = createTransporter();
   const mailOptions = {
     from: process.env.EMAIL_FROM,
     to,

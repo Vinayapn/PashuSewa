@@ -24,7 +24,14 @@ export default function LoginPage() {
       const { data } = await authAPI.login(form);
       login(data.user, data.token);
       toast.success(data.message || 'Login successful!');
-      navigate(`/${data.user.role}`, { replace: true });
+      const role = (data.user.role || 'user').trim().toLowerCase();
+      if (role === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else if (role === 'user') {
+        navigate('/', { replace: true });
+      } else {
+        navigate(`/${role}`, { replace: true });
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {

@@ -22,14 +22,14 @@ export default function NGODashboard() {
   const [tab, setTab] = useState('dashboard');
   const [data, setData] = useState({ stats: {}, resources: [], volunteers: [], alerts: [] });
   const [loading, setLoading] = useState(true);
-  
+
   const [campaigns, setCampaigns] = useState([
     { id: 1, title: 'Street Dogs Rescue', desc: 'Rescue and shelter street dogs', raised: 32500, goal: 50000, status: 'active', date: '2025-04-01' },
     { id: 2, title: 'Cow Shelter Build', desc: 'Build shelter for abandoned cows', raised: 78000, goal: 100000, status: 'active', date: '2025-03-15' },
     { id: 3, title: 'Vaccination Drive', desc: 'Free vaccination for stray animals', raised: 25000, goal: 25000, status: 'completed', date: '2025-02-20' },
   ]);
   const [editingCampaign, setEditingCampaign] = useState(null);
-  
+
   const [volunteers, setVolunteers] = useState([
     { id: 1, name: 'Rahul Sharma', email: 'rahul@email.com', phone: '+91 98765 43210', skills: ['Rescue', 'Transport'], status: 'active', contributions: '120 hrs', cases: '18 cases', joined: '2025-01-15' },
     { id: 2, name: 'Priya Patel', email: 'priya@email.com', phone: '+91 98765 43211', skills: ['Medical', 'Foster Care'], status: 'active', contributions: '95 hrs', cases: '12 cases', joined: '2025-02-10' },
@@ -70,16 +70,16 @@ export default function NGODashboard() {
     try {
       const { data: d } = await ngoAPI.getDashboard();
       setData(d);
-    } catch { 
+    } catch {
       // toast.error('Failed to load dashboard'); 
-    } finally { 
-      setLoading(false); 
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => { 
-    fetchData(); 
-    
+  useEffect(() => {
+    fetchData();
+
     // Listen for events
     const cleanupAlert = onEvent('alert_created', (alert) => {
       fetchData();
@@ -108,20 +108,20 @@ export default function NGODashboard() {
       case 'adoption': return <NGOAdoptionAnimal />;
       case 'profile': return <NGOProfile />;
       case 'reports': return <NGOReports />;
-      default: return <NGODashboardOverview setTab={handleTabChange} stats={data.stats} />;
+      default: return <NGODashboardOverview setTab={handleTabChange} stats={data.stats} campaigns={campaigns} donations={donations} />;
     }
   };
 
   return (
     <div className="flex min-h-screen bg-[#F8F9FA]">
       <NGOSidebar activeTab={tab} setTab={handleTabChange} />
-      
+
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Header */}
         <header className="h-20 bg-white border-b border-gray-100 flex items-center justify-between px-8 shrink-0 z-10">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-               <LayoutDashboard size={18} />
+              <LayoutDashboard size={18} />
             </div>
             <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">
               NGO - <span className="text-emerald-600">{tab.replace('-', ' ').toUpperCase()}</span>
@@ -133,9 +133,9 @@ export default function NGODashboard() {
               <Bell size={20} />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
             </button>
-            
+
             <div className="h-8 w-[1px] bg-gray-100"></div>
-            
+
             <div className="flex items-center gap-3 group cursor-pointer">
               <div className="text-right">
                 <div className="text-sm font-bold text-gray-800 group-hover:text-emerald-600 transition-colors">{user?.name || 'sameer'}</div>

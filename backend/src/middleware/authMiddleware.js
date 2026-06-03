@@ -30,7 +30,10 @@ const authenticate = async (req, res, next) => {
 // Role guard
 const requireRole = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    const userRole = (req.user.role || 'user').trim().toLowerCase();
+    const allowedRoles = roles.map(r => r.trim().toLowerCase());
+    
+    if (!allowedRoles.includes(userRole)) {
       return res.status(403).json({
         success: false,
         message: `Access denied. Only ${roles.join(' or ')} can access this resource.`,

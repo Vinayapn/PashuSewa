@@ -8,6 +8,7 @@ const authRoutes = require('./src/routes/auth');
 const rescuerRoutes = require('./src/routes/rescuer');
 const ngoRoutes = require('./src/routes/ngo');
 const doctorRoutes = require('./src/routes/doctor');
+const adminRoutes = require('./src/routes/admin');
 const socketHandlers = require('./src/socket/socketHandlers');
 
 dotenv.config();
@@ -26,11 +27,9 @@ const io = new Server(httpServer, {
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'https://pashu-sewa-lime.vercel.app',
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
 }));
-
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -39,6 +38,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/rescuer', rescuerRoutes);
 app.use('/api/ngo', ngoRoutes);
 app.use('/api/doctor', doctorRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
