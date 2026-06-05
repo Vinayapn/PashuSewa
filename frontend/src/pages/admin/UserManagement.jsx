@@ -90,7 +90,7 @@ export default function UserManagement() {
             onChange={(e) => setSearch(e.target.value)}
             style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', padding: '10px 0' }}
           />
-          <button type="submit" className="btn btn-primary" style={{ borderRadius: 0 }}>Search</button>
+          <button type="submit" className="btn btn-primary" style={{ borderRadius: 5 }}>Search</button>
         </form>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-card)', padding: '0 16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
@@ -98,7 +98,7 @@ export default function UserManagement() {
           <select 
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', padding: '10px 0', outline: 'none', cursor: 'pointer' }}
+            style={{ background: 'black', border: 'none', color: 'var(--text-main)', padding: '10px 0', outline: 'none', cursor: 'pointer' }}
           >
             <option value="all">All Roles</option>
             <option value="user">User</option>
